@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boombox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Monoton&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ EDIT ME: THEME (change these to restyle the whole app) ============ */
+:root{
+  --bg-top:#12002b; --bg-mid:#2a0a4f; --bg-bottom:#4a0f5c;   /* night sky */
+  --pink:#ff2e93; --cyan:#19f0ff; --sun-top:#ffd400; --sun-bottom:#ff5e3a;
+  --text:#f4eaff; --muted:#b9a3d9; --card:rgba(30,8,60,.78);
+  --font-title:'Monoton',cursive; --font-body:'Chakra Petch',system-ui,sans-serif;
+  --radius:14px;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+/* ============ LAYOUT & COMPONENTS ============ */
+html{scroll-padding-top:env(safe-area-inset-top,0px);color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100vh;color:var(--text);font:400 16px/1.5 var(--font-body);
+  background:linear-gradient(var(--bg-top),var(--bg-mid) 60%,var(--bg-bottom)) fixed;overflow-x:hidden}
+.floor{position:fixed;left:-50%;right:-50%;bottom:0;height:45vh;z-index:-1;transform:perspective(300px) rotateX(60deg);transform-origin:bottom;
+  background:linear-gradient(transparent,rgba(255,46,147,.3)),
+  repeating-linear-gradient(90deg,rgba(25,240,255,.35) 0 2px,transparent 2px 60px),
+  repeating-linear-gradient(0deg,rgba(25,240,255,.35) 0 2px,transparent 2px 40px)}
+main{max-width:960px;margin:0 auto;padding:28px 18px 80px}
+header{text-align:center;margin-bottom:26px}
+.sun{position:relative;width:150px;height:150px;margin:0 auto -50px;border-radius:50%;overflow:hidden;
+  background:linear-gradient(var(--sun-top),var(--sun-bottom) 55%,var(--pink))}
+.sun::after{content:"";position:absolute;inset:50% 0 0;background:repeating-linear-gradient(transparent 0 7px,var(--bg-mid) 7px 11px)}
+h1{position:relative;margin:0;font:400 clamp(2.2rem,8vw,4.2rem)/1.05 var(--font-title);letter-spacing:.04em;color:var(--cyan);
+  text-shadow:0 0 8px var(--cyan),0 0 26px var(--pink),3px 3px 0 var(--pink)}
+.tag{margin:10px 0 0;color:var(--muted);font-size:1.05rem}
+.panel{background:var(--card);border:2px solid var(--cyan);border-radius:var(--radius);padding:20px;
+  box-shadow:0 0 22px rgba(25,240,255,.35),inset 0 0 18px rgba(255,46,147,.15);backdrop-filter:blur(4px)}
+label.lbl,legend{display:block;font-weight:700;margin-bottom:8px;color:var(--cyan);padding:0}
+fieldset{border:0;margin:18px 0 0;padding:0}
+input[type=text],input[type=password]{width:100%;padding:13px 14px;font:inherit;color:var(--text);background:rgba(0,0,0,.35);
+  border:2px solid var(--pink);border-radius:10px}
+input:focus-visible,button:focus-visible,summary:focus-visible,.pill:has(input:focus-visible){outline:3px solid var(--sun-top);outline-offset:2px}
+.pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pill{position:relative;text-align:center;padding:13px 10px;border:2px solid var(--muted);border-radius:10px;cursor:pointer;font-weight:600;transition:.15s}
+.pill input{position:absolute;opacity:0}
+.pill:has(input:checked){border-color:var(--sun-top);color:#1a0033;background:linear-gradient(var(--sun-top),var(--sun-bottom));box-shadow:0 0 16px var(--sun-bottom)}
+.btn{font:700 1rem var(--font-body);cursor:pointer;color:#fff;background:var(--pink);border:0;border-radius:10px;padding:13px 22px;
+  box-shadow:4px 4px 0 var(--cyan);transition:transform .1s,box-shadow .1s}
+.btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--cyan)}
+.btn.alt{background:transparent;border:2px solid var(--cyan);color:var(--cyan);box-shadow:none}
+.btn:disabled{opacity:.5;cursor:wait}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+.chip{font:inherit;font-size:.9rem;color:var(--text);background:rgba(255,255,255,.08);border:1px dashed var(--muted);border-radius:20px;padding:6px 12px;cursor:pointer}
+.msg{color:var(--sun-top);margin:10px 0 0;min-height:1.4em}
+details{margin-top:16px;color:var(--muted);font-size:.9rem}
+summary{cursor:pointer}
+#out{margin-top:28px}
+.summary{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px}
+.energy{background:var(--pink);color:#fff;font-weight:700;padding:4px 12px;border-radius:20px;box-shadow:0 0 12px var(--pink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.card{background:var(--card);border:2px solid var(--pink);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 16px rgba(255,46,147,.35)}
+.art{position:relative;aspect-ratio:1;background:linear-gradient(135deg,var(--pink),var(--bg-mid) 70%,var(--cyan))}
+.art::before{content:"♪";position:absolute;inset:0;display:grid;place-items:center;font-size:4rem;color:rgba(255,255,255,.7)}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.info{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.info h3{margin:0;font-size:1.2rem;color:var(--sun-top)}
+.info .by{color:var(--cyan);font-weight:600}
+.info p{margin:0;color:var(--text);flex:1}
+.info a{color:var(--pink);font-weight:700;text-decoration:none;border-bottom:2px solid var(--pink);align-self:flex-start}
+.sk{min-height:330px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.14),rgba(255,255,255,.05)) 0 0/200% 100%;animation:sh 1.2s linear infinite;border-radius:var(--radius)}
+@keyframes sh{to{background-position:-200% 0}}
+.pl{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:t}
+.pl li{counter-increment:t;display:grid;grid-template-columns:auto 64px 1fr;gap:14px;align-items:center;background:var(--card);border:2px solid var(--cyan);border-radius:var(--radius);padding:10px 14px}
+.pl li::before{content:counter(t);font:400 1.6rem var(--font-title);color:var(--pink)}
+.pl .art{width:64px;border-radius:8px;overflow:hidden}.pl .art::before{font-size:1.6rem}
+.pl b{color:var(--sun-top)}.pl small{display:block;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:8px 18px;align-self:flex-start}
+.info .links a,.pl .links a{color:var(--pink);font-weight:700;text-decoration:none;border-bottom:2px solid var(--pink)}
+.info .links a.sp,.pl .links a.sp{color:var(--cyan);border-bottom-color:var(--cyan)}
+.pl .links{margin-top:6px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="floor" aria-hidden="true"></div>
+<main>
+  <header>
+    <div class="sun" aria-hidden="true"></div>
+    <h1 id="appname">Boombox</h1>
+    <p class="tag" id="tagline">What should I listen to while I work on this?</p>
+  </header>
+
+  <section class="panel">
+    <label class="lbl" for="task">What are you working on?</label>
+    <input id="task" type="text" maxlength="200" placeholder="I'm designing a presentation for an upcoming marketing meeting." autocomplete="off">
+    <fieldset><legend>How long will it take?</legend><div class="pills" id="lengths"></div></fieldset>
+    <div class="row"><button class="btn" id="go">Find my music</button>
+      <span>Try:</span><button class="chip" data-t="I'm writing a campaign email for a new product launch." data-l="Less than 1 hour">Launch email</button>
+      <button class="chip" data-t="I'm designing a new presentation for a client meeting." data-l="1–2 hours">Client deck</button></div>
+    <p class="msg" id="msg" role="status"></p>
+    
+  </section>
+  <section id="out" aria-live="polite"></section>
+</main>
+
+<script>
+/* ============ EDIT ME: SETTINGS ============ */
+const CONFIG = { appName:'Boombox', tagline:'What should I listen to while I work on this?', songCount:3, playlistLength:15 };
+
+/* Energy guidance per task length. Add or rename options here and the buttons update. */
+const LENGTHS = {
+  'Less than 1 hour':'HIGH energy: upbeat, punchy, momentum for a focused sprint. Vocals are fine unless the task is language-heavy.',
+  '1–2 hours':'MODERATE energy: steady and engaging with some variation and limited vocals.',
+  '2+ hours':'LOW-TO-MODERATE energy built for endurance: consistent, immersive, repetitive or slowly evolving, little or no vocals, no jarring shifts.'
+};
+
+/* ============ EDIT ME: SONG LIBRARY (from the research team) ============
+   Each row: [task, title, artist, YouTube video ID or full URL, vibe, optional task length].
+   A task length means the researchers matched that song to that duration. */
+const ROWS = [
+["Copy Writing","Disposition","Tool","dUQjGpm5Kr8","Its patient rhythm and restrained atmosphere create a reflective headspace for finding the right words without overpowering the writing process."],
+["Copy Writing","Fearless","Pink Floyd","IkgaMFjo_lI","Its steady acoustic progression creates a confident but unhurried energy for developing an idea from the first draft through the final message."],
+["Copy Writing","Marooned","Pink Floyd","P7YMI39sObY","This expressive instrumental provides emotional texture and creative space without adding lyrics that compete with the words being written."],
+["Copy Writing","Norupo","Heilung","64CACoHNBEI","Its repetitive vocal patterns and organic percussion establish an immersive creative rhythm that can help ideas flow during a longer writing session."],
+["Design","The Dark Side of the Moon","Pink Floyd","DLOth-BuCNY","Artistic, cinematic melodies that are familiar enough to tune in or out of while creating."],
+["Design","Cirrus","Bonobo","WF34N4gJAKE","Visual, slightly cinematic electronic textures create a creative headspace with hardly any vocals."],
+["Design","Time","Hans Zimmer","c56t7upa8Bk","Cinematic and instrumental, it builds a creative atmosphere without demanding attention."],
+["Design","People Are Strange","The Doors","AgHaGrZkkv4","A well-known, artistic classic with melodic character that most people can tune in or out of."],
+["Data Analysis/Reporting","Keep Moving","Jungle","7-lWzQd_xeQ","Its repeating hook and long runtime settle into the background while you work through a dataset.","Less than 1 hour"],
+["Data Analysis/Reporting","Coffee","Sylvan Esso","Qr5AIKRPIHo","Its clean electronic pulse and simple structure fit fast, methodical tasks.","Less than 1 hour"],
+["Data Analysis/Reporting","Dreams","Fleetwood Mac","Y3ywicffOj4","Its unhurried tempo and steady drum pattern never spike, so focus stays even the whole way through.","1–2 hours"],
+["Data Analysis/Reporting","Jazz lofi radio – beats to chill/study to","Lofi Girl","E2vONfzoyRI","Its continuous jazz-leaning instrumentals stay warm and low-key without any lyrics or track changes to pull you out of a long analysis session.","2+ hours"],
+["Research","Reptilia","The Strokes","b8-tXG8KrWs","Its urgent guitar riff sets a quick, focused pace for digging into a question fast.","Less than 1 hour"],
+["Research","Light On","Maggie Rogers","MSFjYe54uv4","Its steady pulse and open production keep a mid-length session moving at a consistent clip.","1–2 hours"],
+["Research","lofi hip hop radio – beats to relax/study to","Lofi Girl","https://www.youtube.com/@LofiGirl/live","A nonstop instrumental stream that stays in the background for long research sessions with no song changes to manage.","2+ hours"],
+["Presentation Building","Eye of the Tiger","Survivor","btPJPFnesV4","A confidence-building anthem that makes you feel ready to take on whatever the day throws at you."],
+["Presentation Building","Seven Nation Army","The White Stripes","0J2QdDbelmY","Its driving, iconic riff builds energized, capable momentum without gym-level aggression."],
+["Presentation Building","Lose Yourself","Eminem","xFYQQPAOz7Y","An uplifting I-can-do-this anthem for when you need to feel capable of great things."],
+["Brainstorming","Tongue Tied","Grouplove","1x1wjGKHjBI","Its loose, upbeat feel loosens things up when you need volume of ideas over polish.","Less than 1 hour"],
+["Brainstorming","Gooey","Glass Animals","IIA1XQnAv5s","Its hazy, off-kilter production encourages less literal thinking and unexpected connections.","1–2 hours"],
+["Brainstorming","Dive","Olivia Dean","NM4e606yFJg","Its warm, easy tempo keeps the mood open when you are working through ideas with other people.","1–2 hours"],
+["Brainstorming","Sound & Color","Alabama Shakes","faG8RiaANek","Its spacious, dreamlike arrangement sets a reflective tone for open-ended thinking.","2+ hours"],
+["Brainstorming","Let It Happen","Tame Impala","NMRhx71bGo4","Its slow, wide-open arrangement creates space for big-picture thinking without pressure.","2+ hours"],
+["Learning","Reflection","Tool","4MzVuHqsNoM","Its meditative pacing and repeating patterns support sustained attention when absorbing detailed or unfamiliar information."],
+["Learning","Echoes","Pink Floyd","OcDiOUQBFd4","Its extended musical progression creates an immersive environment for deep learning sessions that require patience and uninterrupted concentration."],
+["Learning","Learning to Fly","Pink Floyd","nVhNCTH8pDs","Its steady momentum and theme of navigating something new make it a natural fit for building knowledge and developing confidence."],
+["Learning","Anoana","Heilung","SVbc_Fwbt50","Its hypnotic vocals and ceremonial rhythm encourage curiosity and immersion when exploring a new subject or perspective."],
+["Event Planning","Awake","Tycho","6XJBDX3Z0BY","Calm, uplifting and atmospheric, it keeps you motivated without adding to your anxiety."],
+["Event Planning","A Moment Apart","ODESZA","xarC5jAiO7w","Steady and atmospheric, it sits in the background while you plan and create."],
+["Event Planning","Breathe","The Prodigy","6_PAHbqq-o4","Driving but steady momentum keeps motivation up while you tackle the day."],
+["Strategy Planning","Lateralus","Tool","Y7JG63IuaWs","Its intricate structure and evolving momentum complement strategic thinking that requires examining patterns, connections, and multiple possible directions."],
+["Strategy Planning","Pneuma","Tool","5ClCaPmAA7s","Its deliberate build and precise polyrhythm create an intentional mindset for moving from broad ideas toward a clear and structured plan."],
+["Strategy Planning","Shine On You Crazy Diamond, Pts. 1-5","Pink Floyd","kwiawhDk2TM","Its gradual development encourages patient, big-picture thinking during planning sessions where the direction may take time to emerge."],
+["Strategy Planning","Any Colour You Like","Pink Floyd","l8pEjmZVx3k","Its flowing instrumental progression supports flexible thinking while comparing possibilities and choosing a direction."]
+];
+const LIBRARY = ROWS.map(([task,title,artist,yt,vibe,len]) => ({task,title,artist,youtubeUrl: yt.length===11 ? 'https://www.youtube.com/watch?v='+yt : yt, vibe, len: len||''}));
+
+/* Easter egg: this prompt always returns Never Gonna Give You Up first. */
+const RICK = {title:'Never Gonna Give You Up', artist:'Rick Astley', source:'library', why_it_fits:'A project this important deserves a commitment you can count on: you are never gonna give it up.'};
+LIBRARY.push({task:'Easter egg', title:RICK.title, artist:RICK.artist, youtubeUrl:'https://www.youtube.com/watch?v=dQw4w9WgXcQ', vibe:'', len:'', egg:true});
+const RICK_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';   // every result links here when the easter egg fires
+const isEgg = (task,len) => /hack to the future/i.test(task) && (len==='2+ hours' || /over 2 hours/i.test(task));
+const DECK_EGG_URL = 'https://www.youtube.com/watch?v=QDia3e12czc';   // every result links here for the Client deck easter egg
+const isDeckEgg = task => task.trim().toLowerCase() === "i'm designing a new presentation for a client meeting.";
+
+/* ============ APP LOGIC (no need to edit below unless changing behavior) ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+document.title = CONFIG.appName; $('#appname').textContent = CONFIG.appName; $('#tagline').textContent = CONFIG.tagline;
+let sampleFn = null, recent = [], last = null;
+
+$('#lengths').innerHTML = Object.keys(LENGTHS).map((k,i) =>
+  `<label class="pill"><input type="radio" name="len" value="${esc(k)}">${esc(k)}</label>`).join('');
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+  $('#task').value = c.dataset.t;
+  document.querySelectorAll('input[name=len]').forEach(r => r.checked = r.value === c.dataset.l);
+});
+
+const vid = u => { const m = (u||'').match(/(?:v=|youtu\.be\/)([\w-]{11})/); return m && m[1]; };
+const norm = s => String(s).toLowerCase().trim();
+
+/*ENGINE-START*/
+/* ============ EDIT ME: RULE-BASED RECOMMENDATION ENGINE (no AI, no API key) ============
+   1) Keywords in the task pick a category (RULES).  2) Task length sets the energy target.
+   3) Every song is scored on category fit, length fit, energy, vocals and library membership. */
+const CAT = {W:'Copy Writing',P:'Presentation Building',D:'Design',A:'Data Analysis/Reporting',R:'Research',B:'Brainstorming',L:'Learning',E:'Event Planning',S:'Strategy Planning',C:'Coding',O:'SEO',U:'User Research'};
+/* Order matters: on a tie the earlier category wins. */
+const RULES = {
+  P:/presentation|deck|slide|pitch|keynote|speech|webinar|demo/g,
+  W:/writ|copy|email|newsletter|blog|article|caption|headline|draft|proofread|content|essay|post/g,
+  D:/design|mockup|logo|layout|illustrat|graphic|figma|photoshop|brand|creative|storyboard|\bui\b|\bux\b|video/g,
+  A:/data|analy|report|spreadsheet|excel|dashboard|metric|kpi|sql|forecast|budget|financ/g,
+  R:/research|investigat|competitor|market|read|literature|look into/g,
+  B:/brainstorm|\bideas?\b|ideat|concept|naming|come up with/g,
+  L:/learn|study|course|tutorial|train|exam|certif|lesson|homework|practice/g,
+  E:/event|conference|party|wedding|logistic|schedule|itinerary|venue|trip|festival/g,
+  S:/strateg|roadmap|plan|okr|goal|vision|prioriti|quarter|proposal/g,
+  C:/code|coding|develop|program|debug|bug|software|\bapp\b|website|html|css|javascript|python|\bapi\b|script/g,
+  O:/\bseo\b|keyword|search engine|backlink|ranking|meta/g,
+  U:/user research|interview|usability|persona|user test|customer feedback|survey/g
+};
+const LANGY = 'WORLU';                       // language-heavy work: favor low-vocal music
+const TARGET = {'Less than 1 hour':3,'1–2 hours':2,'2+ hours':1};   // energy 3 high, 2 moderate, 1 low
+const EN = ['','steady, low-key','balanced, moderate','upbeat, high-energy'], VO = ['instrumental','light-vocal','vocal-forward'];
+const LENP = {'Less than 1 hour':'a quick sprint','1–2 hours':'a steady session','2+ hours':'a long stretch'};
+
+
+/* One unique note per song. Descriptions are built from these, so no two songs ever share the same line. */
+const NOTES = {
+"A Walk":"a warm, rolling synth groove with no lyrics to follow","Roygbiv":"playful, bubbling melodies that stay comfortably in the background","Dayvan Cowboy":"a slow-burning build that grows into shimmering guitar layers","Technologic":"a robotic vocal loop that locks into a fast rhythm","Harder, Better, Faster, Stronger":"a relentless vocoder groove that rewards momentum","Nightcall":"moody night-drive synths with soft, spoken-style vocals","Go":"a pounding electronic pulse that drives you forward","Says":"a single pulsing piano motif that swells patiently","An Ending (Ascent)":"weightless, slowly drifting textures that clear mental clutter","Your Hand in Mine":"cinematic guitars that build gradually without any words","Take Me Somewhere Nice":"hazy, gentle guitars that keep the mood calm and unhurried","Hoppípolla":"soaring strings and piano that lift your ambition","Open Eye Signal":"a hypnotic, propulsive techno pulse that locks into your head","Baby|Four Tet":"a light, looping electronic groove with a friendly sway","Kerala":"chopped vocal samples riding a smooth, steady beat","Teardrop":"a hushed, heartbeat-like rhythm that settles the mind","Everything in Its Right Place":"a warm electric-piano loop that feels calmly mechanical","Near Light":"delicate piano and strings that hush the room","Cornfield Chase":"swelling organ and piano that open up a wide, cinematic sky","Nuvole Bianche":"gentle, flowing piano that keeps thoughts moving","On the Nature of Daylight":"slow, emotive strings that add depth without distraction","Wish You Were Here":"warm acoustic guitar that invites a reflective mood","Us and Them":"a slow, lounging saxophone drift with a hazy, late-night feel","Riders on the Storm":"rainy, hypnotic keys with a cool late-night feel","The Less I Know the Better":"a bouncing bassline and shimmering synths that spark ideas","Maria También":"a sun-warmed instrumental groove with an easy, funky swing","To Build a Home":"a tender piano ballad that slows the pace to a whisper","Dive|Tycho":"sunrise-bright synths with a steady, motivating pulse","Line of Sight":"a bright, uplifting build with an energetic drop","D.A.N.C.E.":"bouncy, glossy electro that adds instant energy","Don't Stop Me Now":"a piano-driven rush of pure confidence","The Pretender":"punchy guitar riffs that push you toward the finish line","Mr. Brightside":"a racing, singalong guitar rhythm that keeps adrenaline up","Uptown Funk":"brassy funk swagger that makes everything feel doable","Holocene":"soft, spacious falsetto that gives ideas room to breathe","Feather":"a mellow, jazzy beat with a soft, dusty warmth","Aruarian Dance":"a delicate piano and guitar loop with quiet, jazzy warmth","Time: The Donut of the Heart":"a loose, dusty drum groove with a shuffling swing","Since I Left You":"sun-drenched sampled strings and a sweeping, feel-good pulse","Remind Me":"a light, groovy electronic beat with a clean, polished feel","La Femme d'Argent":"silky, floating bass and keys that smooth out the mood","Midnight City":"big neon synths that fuel bold, fast ideas","Circles":"an easygoing guitar groove with a lazy, rolling feel","Sunflower":"a breezy, bright hook that keeps the mood light","Wow.":"a steady, confident bounce with a smooth, punchy hook","Better Now":"a mid-tempo, melodic pull that keeps you in the flow","Chemical":"a fizzing, anthemic build with a big, shouty hook","I Had Some Help":"a twangy, upbeat swagger that adds instant motivation","Baby|Justin Bieber":"a catchy, nostalgic hook you end up humming all day","Sorry":"a bright tropical-house pulse with a smooth, glossy groove","Love Yourself":"a stripped-back acoustic groove with a warm, sing-along hook","What Do You Mean?":"a bouncy, stuttering beat with a playful pulse","Boyfriend":"a smooth, breezy rhythm that keeps momentum steady","Peaches":"a laid-back, soulful groove that melts tension","Ghost":"a brisk, driving beat with relentless forward motion","Stay":"a rapid, pulsing pop rush that never lets up","Yummy":"a snappy, playful beat with plenty of bounce","Holy":"an uplifting, gospel-tinged lift that brightens the room","Bye Bye Bye":"a sharp, choreographed-pop rush with an unforgettable hook","It's Gonna Be Me":"a dramatic early-2000s pop punch with a huge chorus","Tearin' Up My Heart":"an upbeat, nostalgic pop bounce that is hard to sit still to","Pop":"a bold, staccato beat that sparks quick ideas","This I Promise You":"a tender, slow ballad with a warm, wistful melody","Espresso":"a bubbly, caffeinated groove with a cheeky, winking hook","Please Please Please":"a sparkling, retro-tinged hook that keeps energy light","Good Luck, Babe!":"a dramatic, anthemic build with a big, cinematic swell","Pink Pony Club":"a glittering, feel-good pop run with a shimmering hook","Levitating":"a disco-bright bassline that keeps the pace lively","Houdini":"a sleek, thumping beat that adds forward drive","As It Was":"a bright, jittery synth-pop drive with a rushing, breathless beat","Blinding Lights":"a racing 80s synth pulse straight out of a midnight drive","Cruel Summer":"a soaring bridge that builds into a huge, cathartic chorus","Anti-Hero":"a punchy, confessional beat with a wry, honest edge","good 4 u":"a fast, pop-punk rush that burns off nervous energy","About Damn Time":"a funky, confident groove with a swagger you can feel","Titanium":"a soaring, powerful chorus that swells with every repeat","Levels":"a euphoric, sawtooth-synth rush that keeps climbing","Feel So Close":"a bright, driving house beat with a clean, steady pulse","Miracle":"a crisp, high-energy dance pulse with a shimmering lead","Delilah (pull me out of this)":"a glitching, fast-cutting groove with a restless heartbeat","Glue":"a shimmering, dreamy house pulse with a steady heartbeat","Genesis":"a gritty, driving electro riff that sharpens attention","Aerodynamic":"a fast, guitar-laced instrumental with a crisp, robotic swing","Music for Airports 1/1":"slowly overlapping piano loops that drift on and on","Weightless":"engineered ambient layers that slow the pulse","Rhubarb":"a soft, drifting ambient wash that never demands attention","Vladimir's Blues":"a hushed, low-lit piano-and-strings drift","Monday Loop":"a warm, dusty lofi loop that settles into the background","Affection":"a mellow, jazzy lofi sway with a soft, tape-warm haze","Soon It Will Be Cold Enough":"a slow, glacial-electronic roll that holds a calm groove","So What":"a cool, walking bassline over lazy, brushed drums","Blue in Green":"a hushed, late-night piano and trumpet drift","Waltz for Debby":"a gentle piano trio that swings softly and quietly","My Favorite Things":"a hypnotic, modal jazz spiral that circles and expands","Cast Your Fate to the Wind":"a cozy jazz piano with a gentle, unhurried lilt","Cantaloupe Island":"a funky, easy-swinging jazz groove with an unmistakable piano riff","'Round Midnight":"a slow, smoky piano with a late-night, candlelit mood"
+};
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+/* One-sentence description built only from the song's own note (no task or length wording). */
+function describe(c){ return cap(c.note || 'a well-matched pick') + '.'; }
+
+/* Extra songs beyond the library: [title, artist, energy 1-3, vocals 0-2, category codes]. Q = good for quick tasks. */
+const SUGG = [
+["A Walk","Tycho",2,0,"CAOU"],["Roygbiv","Boards of Canada",2,0,"CAOD"],["Dayvan Cowboy","Boards of Canada",2,0,"CDAR"],
+["Technologic","Daft Punk",3,1,"CAQ"],["Harder, Better, Faster, Stronger","Daft Punk",3,1,"CAOQ"],["Nightcall","Kavinsky",2,1,"CDA"],
+["Go","The Chemical Brothers",3,1,"CAQ"],["Says","Nils Frahm",1,0,"WLRC"],["An Ending (Ascent)","Brian Eno",1,0,"WLRCS"],
+["Your Hand in Mine","Explosions in the Sky",2,0,"CDRS"],["Take Me Somewhere Nice","Mogwai",1,0,"WRLC"],["Hoppípolla","Sigur Rós",2,1,"DPB"],
+["Open Eye Signal","Jon Hopkins",3,0,"CAQ"],["Baby","Four Tet",2,1,"AOC"],["Kerala","Bonobo",2,1,"DAOC"],
+["Teardrop","Massive Attack",1,1,"RLU"],["Everything in Its Right Place","Radiohead",1,1,"WRLU"],["Near Light","Ólafur Arnalds",1,0,"WLRD"],
+["Cornfield Chase","Hans Zimmer",1,0,"WDLRS"],["Nuvole Bianche","Ludovico Einaudi",1,0,"WLRU"],["On the Nature of Daylight","Max Richter",1,0,"WLRS"],
+["Wish You Were Here","Pink Floyd",1,1,"WDS"],["Us and Them","Pink Floyd",1,1,"WSL"],["Riders on the Storm","The Doors",2,1,"DW"],
+["The Less I Know the Better","Tame Impala",3,1,"BPQ"],["Maria También","Khruangbin",2,0,"WDBE"],["To Build a Home","The Cinematic Orchestra",1,1,"WRL"],
+["Dive","Tycho",2,0,"ECOS"],["Line of Sight","ODESZA",3,1,"EPQ"],["D.A.N.C.E.","Justice",3,1,"PQ"],
+["Don't Stop Me Now","Queen",3,2,"PQ"],["The Pretender","Foo Fighters",3,2,"PQ"],["Mr. Brightside","The Killers",3,2,"PBQ"],
+["Uptown Funk","Mark Ronson",3,2,"EPQ"],
+["Holocene","Bon Iver",1,1,"WRL"],
+["Feather","Nujabes",1,1,"LCRO"],["Aruarian Dance","Nujabes",1,0,"LCRAU"],["Time: The Donut of the Heart","J Dilla",2,0,"CAOU"],
+["Since I Left You","The Avalanches",2,1,"DBE"],["Remind Me","Röyksopp",2,1,"ACOD"],["La Femme d'Argent","Air",1,0,"WDE"],["Midnight City","M83",3,1,"BEQ"],
+/* --- Post Malone: Design, under 1 hour --- */
+["Circles","Post Malone",2,2,"DQ"],["Sunflower","Post Malone",2,2,"DQ"],["Wow.","Post Malone",3,2,"DQ"],["Better Now","Post Malone",3,2,"DQ"],["Chemical","Post Malone",3,2,"DQ"],["I Had Some Help","Post Malone",3,2,"DQ"],
+/* --- Older Justin Bieber: Copy Writing and Presentations, 1-2 hours (X = curator pick for that length) --- */
+["Baby","Justin Bieber",2,2,"WPX"],["Sorry","Justin Bieber",2,1,"WPX"],["Love Yourself","Justin Bieber",2,1,"WPX"],["What Do You Mean?","Justin Bieber",2,1,"WPX"],["Boyfriend","Justin Bieber",2,1,"WPX"],
+/* --- Newer Justin Bieber: Coding and Design, under 1 hour --- */
+["Peaches","Justin Bieber",2,2,"CDQ"],["Ghost","Justin Bieber",3,2,"CDQ"],["Stay","The Kid LAROI & Justin Bieber",3,2,"CDQ"],["Yummy","Justin Bieber",3,2,"CDQ"],["Holy","Justin Bieber",2,2,"CDQ"],
+/* --- NSYNC --- */
+["Bye Bye Bye","NSYNC",3,2,"PBEQ"],["It's Gonna Be Me","NSYNC",3,2,"PEQ"],["Tearin' Up My Heart","NSYNC",3,2,"BEQ"],["Pop","NSYNC",3,2,"PBQ"],["This I Promise You","NSYNC",1,2,"WE"],
+/* --- Fast, current songs for tasks under 1 hour (Q) --- */
+["Espresso","Sabrina Carpenter",3,2,"PBEQ"],["Please Please Please","Sabrina Carpenter",3,2,"PEQ"],["Good Luck, Babe!","Chappell Roan",3,2,"PBEQ"],["Pink Pony Club","Chappell Roan",3,2,"BEQ"],
+["Levitating","Dua Lipa",3,1,"PDBQ"],["Houdini","Dua Lipa",3,2,"PBQ"],["As It Was","Harry Styles",3,2,"DBQ"],["Blinding Lights","The Weeknd",3,2,"PACQ"],
+["Cruel Summer","Taylor Swift",3,2,"PBEQ"],["Anti-Hero","Taylor Swift",2,2,"BQ"],["good 4 u","Olivia Rodrigo",3,2,"PBQ"],["About Damn Time","Lizzo",3,2,"PEQ"],
+["Titanium","David Guetta",3,2,"PDQ"],["Levels","Avicii",3,1,"CDPQ"],["Feel So Close","Calvin Harris",3,1,"CAQ"],["Miracle","Calvin Harris & Ellie Goulding",3,1,"CAQ"],
+["Delilah (pull me out of this)","Fred again..",3,1,"CAOQ"],["Glue","Bicep",2,0,"CDAO"],["Genesis","Justice",3,0,"CAOQ"],["Aerodynamic","Daft Punk",3,0,"CAOQ"],
+/* --- Long-form lofi, jazz and ambient for 2+ hours (T) --- */
+["Music for Airports 1/1","Brian Eno",1,0,"WLRCSOUT"],["Weightless","Marconi Union",1,0,"WLRCSOUT"],["Rhubarb","Aphex Twin",1,0,"WLRCSOUT"],["Vladimir's Blues","Max Richter",1,0,"WLRST"],
+["Monday Loop","Tomppabeats",1,0,"WLRCAOUT"],["Affection","Jinsang",1,0,"WLRCAOUT"],["Soon It Will Be Cold Enough","Emancipator",1,0,"WLRCSOT"],
+["So What","Miles Davis",1,0,"WLRCASOUT"],["Blue in Green","Miles Davis",1,0,"WLRCASUT"],["Waltz for Debby","Bill Evans Trio",1,0,"WLRSUT"],["My Favorite Things","John Coltrane",2,0,"RSLCT"],
+["Cast Your Fate to the Wind","Vince Guaraldi Trio",1,0,"WLRECT"],["Cantaloupe Island","Herbie Hancock",2,0,"CDABT"],["'Round Midnight","Thelonious Monk",1,0,"WLRST"],
+/* --- More data analysis / reporting (A), steady and methodical --- */
+["Strobe","deadmau5",2,0,"ACS","a long, minimal build that unfolds in perfect, steady increments"],
+["Silent Shout","The Knife",2,1,"AO","a cold, pulsing electronic hum with a distant vocal call"],
+["Sunset","The xx",1,1,"ARU","a hushed guitar duet with plenty of empty space"],
+["Midnight in a Perfect World","DJ Shadow",1,0,"ARC","a moody, sample-built loop that never raises its voice"],
+/* --- More event planning (E), calm and atmospheric --- */
+["Home","Edward Sharpe & The Magnetic Zeros",2,2,"EBP","a warm, communal singalong with a whistled hook"],
+["Ho Hey","The Lumineers",2,2,"EBQ","a clap-along folk stomp with a shouted, joyful hook"],
+["Budapest","George Ezra",2,1,"EW","a warm baritone over a breezy, travel-ready strum"],
+["Banana Pancakes","Jack Johnson",1,1,"ELR","a relaxed acoustic sway with an easy, sunlit groove"],
+["Sedona","Houndmouth",2,2,"EBQ","an upbeat, twangy Americana romp with a big singalong"],
+/* --- More SEO (O), repetitive and steady --- */
+["One More Time","Daft Punk",3,1,"OCQ","a looping vocoder hook that repeats like a happy mantra"],
+["Around the World","Daft Punk",2,0,"OACS","a hypnotic, robotic loop that repeats with tiny variations"],
+/* --- More user research (U), attentive and unobtrusive --- */
+["re:stacks","Bon Iver",1,1,"URL","a fragile falsetto over softly plucked, off-kilter guitar"],
+["The Night We Met","Lord Huron",1,1,"URW","a wistful, reverb-heavy ballad with a slow-motion feel"],
+["Skinny Love","Bon Iver",1,1,"URW","a raw, cracked-voice acoustic confession"],
+/* --- More strategy planning (S), patient and structural --- */
+["Divenire","Ludovico Einaudi",1,0,"DSRT","a patient piano build that keeps widening its own horizon"],
+["Svefn-g-englar","Sigur Rós",1,1,"SDRT","a slow, bowed-guitar drone with a ghostly falsetto"],
+["Marble Skin","Hammock",1,0,"SDRT","a slow-motion wall of guitar that never quite resolves"],
+
+
+/* --- Rap for tasks under 1 hour --- */
+["Mmm Hmm","BigXthaPlug",3,2,"PDBCQ","a deep, booming voice over a slow-rolling, heavy beat"],["The Largest","BigXthaPlug",3,2,"PDBCQ","a commanding, bass-heavy swagger with a rumbling low end"],["All the Way","BigXthaPlug & Bailey Zimmerman",3,2,"PDBCQ","a gruff-meets-country hook with surprising crossover energy"],
+["Old Town Road","Lil Nas X",3,2,"PDBCQ","a twangy trap-country stomp with a banjo-tinged hook"],["Industry Baby","Lil Nas X & Jack Harlow",3,2,"PDBCQ","triumphant horns and swagger that announce a big entrance"],["Montero (Call Me By Your Name)","Lil Nas X",3,2,"DBQ","a flamenco-guitar bounce with theatrical flair"],["Panini","Lil Nas X",3,2,"DBCQ","a breezy, melodic hook with a sing-along feel"],
+["Poland","Lil Yachty",3,2,"PDBCQ","a bizarre, bouncy beat that jolts fresh energy in seconds"],["Strike (Holster)","Lil Yachty",3,2,"DBCQ","a psychedelic, offbeat groove that wobbles in all the right ways"],["Broccoli","DRAM & Lil Yachty",3,2,"DBCQ","a playful, sing-song bounce that keeps things loose"],["Minnesota","Lil Yachty",3,2,"DBCQ","a syrupy, laid-back flow over a slow, swaying beat"],
+["A Milli","Lil Wayne",3,2,"PDBCQ","a stripped, rapid-fire flow over one sparse beat"],["Lollipop","Lil Wayne",3,2,"PDBCQ","an auto-tuned, melodic groove that keeps the pace fun"],["6 Foot 7 Foot","Lil Wayne",3,2,"PDBCQ","a punchy, wordplay-packed flow with razor-sharp timing"],["Uproar","Lil Wayne",3,2,"PBCQ","a hard-hitting, high-adrenaline beat that hits like a photo finish"],
+/* --- AC/DC, Pink Floyd and Eagles for 1-2 hours (X) --- */
+["Back in Black","AC/DC",2,2,"XPBCD","a crunchy, steady riff with a mighty backbeat"],["Thunderstruck","AC/DC",2,2,"XPBCD","a rising guitar pulse that builds pure momentum"],["Highway to Hell","AC/DC",2,2,"XPBCA","a driving, open-road rhythm that keeps things moving"],["You Shook Me All Night Long","AC/DC",2,2,"XPBE","a swaggering singalong groove with a cheeky grin"],["Hells Bells","AC/DC",2,2,"XPS","a tolling bell intro and a slow-burning riff"],["T.N.T.","AC/DC",2,2,"XPBC","a stomping, chant-along beat that adds instant grit"],
+["Comfortably Numb","Pink Floyd",2,1,"XWDRS","a slow-swelling solo that climbs to a soaring finish"],["Time","Pink Floyd",2,1,"XWDRS","ticking clocks and a building groove that keep time on your side"],["Money","Pink Floyd",2,1,"XWPBA","an offbeat cash-register loop and bass riff with quirky drive"],["Breathe (In the Air)","Pink Floyd",2,1,"XWDLS","a slow, floating slide guitar that steadies your breathing"],["Brain Damage","Pink Floyd",2,1,"XWDRB","a gentle, spacey groove that drifts through wandering thoughts"],["Hey You","Pink Floyd",2,1,"XWSB","a sparse, echoing build with haunting space between notes"],
+["Hotel California","Eagles",2,1,"XWPDRB","twin guitars and a dark desert mood that hold attention"],["Take It Easy","Eagles",2,1,"XWPBE","a breezy, open-road strum that keeps the mood relaxed"],["Desperado","Eagles",2,1,"XWRS","a solemn piano ballad with a weathered, heartfelt vocal"],["Life in the Fast Lane","Eagles",2,2,"XPBC","a gritty, driving riff with fast-lane swagger"],["One of These Nights","Eagles",2,1,"XWDBS","a smooth, late-night groove with a slinky bassline"],["Take It to the Limit","Eagles",2,1,"XWPS","a slow, building chorus that swells to a big finish"],
+/* --- More lofi and ambient for 2+ hours (T) --- */
+["synthwave radio – beats to chill/game to","Lofi Girl",1,0,"CDASOT","retro neon synth loops that glow like a midnight arcade"],["coffee shop radio – 24/7 lofi hip-hop beats","Lofi Girl",1,0,"WLRABOT","cozy café-style beats that fill hours without a single interruption"],
+["Thursday Afternoon","Brian Eno",1,0,"WLRCSOUT","a single, hour-long tone painting that fades into the room"],["Discreet Music","Brian Eno",1,0,"WLRCASOUT","a slowly shifting synth pattern designed to be half-heard"],["Water Copy","Hiroshi Yoshimura",1,0,"WLRCDOUT","soft, watery synth pulses with a gentle, meditative repeat"],
+["One Summer's Day","Joe Hisaishi",1,0,"WLRDET","a wistful Ghibli piano melody that feels like drifting time"],["Merry-Go-Round of Life","Joe Hisaishi",1,0,"WLRDBT","a waltzing, storybook piano theme with quiet warmth"],["Path of the Wind","Joe Hisaishi",1,0,"WLRDST","a soft, nostalgic forest melody that calms the pace"],
+["Gymnopédie No. 1","Erik Satie",1,0,"WLRSUT","sparse, unhurried piano chords that leave plenty of quiet"],["Clair de Lune","Debussy",1,0,"WLRDET","a flowing, moonlit piano piece with a quiet shimmer"],["Photosynthesis","Carbon Based Lifeforms",1,0,"WLRCSOUT","gently pulsing, forest-floor layers that hold steady and calm"],
+["Poa Alpina","Biosphere",1,0,"WLRCSOUT","a cold, spacious drone that clears the mind"],["Xtal","Aphex Twin",1,0,"WLRCSOUT","shimmering, underwater synth pads over a soft beat"],["Olson","Boards of Canada",1,0,"WLRCSOUT","a fragile, music-box-like loop that fades gently"],
+
+/* --- More songs matched to each task's vibe --- */
+["Forty Six & 2","Tool",2,1,"WSR","a coiling bassline that spirals into a heavy, hypnotic build"],["Schism","Tool",2,1,"WSR","shifting time signatures that twist apart and lock back together"],["High Hopes","Pink Floyd",1,1,"WRL","a slow piano-and-slide-guitar ballad with a distant church bell"],
+["Weird Fishes/Arpeggi","Radiohead",2,1,"WDR","cascading arpeggios that swirl into a bright, weightless finish"],["Re: Stacks","Bon Iver",1,1,"WRL","fingerpicked guitar and a fragile voice in a hushed room"],["Pink Moon","Nick Drake",1,1,"WRL","spare, fingerpicked guitar with an intimate, whispered voice"],
+["Auto Rock","Mogwai",2,0,"WCR","a shimmering, repeating guitar figure that builds by inches"],["First Breath After Coma","Explosions in the Sky",2,0,"WDR","slow, glowing guitars that swell into a cinematic crescendo"],["Experience","Ludovico Einaudi",1,0,"WRLD","layered strings that climb steadily into a rush of light"],
+["River Flows in You","Yiruma",1,0,"WRLE","a flowing, romantic piano line that ripples like water"],["Glassworks: Opening","Philip Glass",1,0,"LRWS","rippling, repeating piano figures that gradually shift"],["Cello Suite No. 1 in G Major: Prélude","Yo-Yo Ma",1,0,"WRLS","a rolling solo cello line with a warm, woody resonance"],
+["L.A. Woman","The Doors",2,1,"DW","a restless organ and guitar groove that drives down a midnight highway"],["Light My Fire","The Doors",2,1,"DPW","a swirling organ solo that spirals over a Latin-tinged beat"],["Mountains","Hans Zimmer",2,0,"DPR","churning organ and pulsing strings that swell like tidal waves"],
+["Dream Is Collapsing","Hans Zimmer",3,0,"DPQ","a rumbling, ticking build that collapses into thunderous brass"],["Kong","Bonobo",2,0,"DC","a rolling, tribal beat with sweeping strings and a warm bass"],["Kiara","Bonobo",2,0,"DAO","a silky, swaying groove with glowing, layered textures"],
+["Epoch","Tycho",2,0,"DC","big, shimmering guitars over a clean, driving beat"],["Montana","Tycho",2,0,"DCO","a sunlit, ascending guitar line that never lets go"],["Collider","Jon Hopkins",3,0,"DC","a whirring, futuristic pulse that spins into a sweeping drop"],
+["Unfinished Sympathy","Massive Attack",2,1,"DW","swooping strings over a slow, smoky breakbeat"],["Glory Box","Portishead",1,1,"DW","a smoky, sample-laced groove with a husky, cinematic voice"],["Tears in Rain","Vangelis",1,0,"DWL","a lonely, sweeping synth theme with a melancholy glow"],
+["Evan Finds the Third Room","Khruangbin",2,0,"AWDC","a funky wah-guitar strut over loose, muted drums"],["White Gloves","Khruangbin",1,0,"AWRD","a reverb-soaked guitar drift over a slow, deep groove"],["Eple","Röyksopp",2,0,"ACO","a playful, bubbling synth melody over a tidy, clicking beat"],
+["Odessa","Caribou",3,1,"AC","a bouncing, syncopated bassline with a brisk, glittery groove"],["Loud Places","Jamie xx",2,1,"AB","a warm, sampled vocal over a slowly building house groove"],["Lebanese Blonde","Thievery Corporation",2,0,"AWE","a sitar-tinged, trip-hop groove with a cool, breezy swing"],
+["You Wish","Nightmares on Wax",2,0,"AO","a laid-back, jazzy loop with a smooth, downtempo bounce"],
+["Don't Stop Believin'","Journey",3,2,"PBE","a rolling piano intro that explodes into a soaring, singalong chorus"],["Here Comes the Sun","The Beatles",2,1,"PWE","a bright, fingerpicked guitar that feels like sunrise"],["Firework","Katy Perry",3,2,"P","a glowing, string-laced anthem with a sky-high chorus"],
+["Stronger (What Doesn't Kill You)","Kelly Clarkson",3,2,"P","a defiant, punchy chorus with a powerhouse vocal"],["Unstoppable","Sia",3,2,"P","a bold, stomping beat with a huge, confident voice"],["Happy","Pharrell Williams",3,2,"PEQ","a handclap-driven groove that is impossible to resist"],
+["Best Day of My Life","American Authors",3,2,"PE","a banjo-and-drum stomp with a cheerful, shouted chorus"],["Gonna Fly Now","Bill Conti",3,0,"PQ","a brassy, triumphant fanfare that climbs step by step"],["Hall of Fame","The Script",3,2,"P","a stadium-sized chorus with a rousing, uplifting swell"],
+["Electric Feel","MGMT",2,1,"EBD","a squelchy, funky bassline under a dreamy falsetto"],["Kids","MGMT",3,1,"OBQ","a bouncing, cartoonish synth riff that refuses to quit"],["Heat Waves","Glass Animals",2,1,"BD","a woozy, slow-melting groove with a sun-drunk hook"],
+["Redbone","Childish Gambino",2,1,"BDW","a slinky, falsetto-soaked funk groove with a wobbly bass"],["Space Song","Beach House",1,1,"BDW","a slow, glittering haze of synths and yearning vocals"],["Dog Days Are Over","Florence + The Machine",3,2,"BQ","a galloping handclap beat with a soaring, joyous voice"],
+["Pumped Up Kicks","Foster the People",3,1,"BQ","a catchy, whistled bass hook with a breezy, deceptive bounce"],["Lisztomania","Phoenix",3,1,"BQ","a jangling, upbeat guitar rush that never slows down"],["Chamber of Reflection","Mac DeMarco",1,1,"BW","a slow, wobbly synth drift with a sleepy, warm vocal"],
+["Say My Name","ODESZA",2,1,"EPB","a bright, pulsing groove with a shimmering, chopped vocal"],["Innerbloom","RÜFÜS DU SOL",2,1,"ECD","a slow-building, glowing groove that blossoms into a huge drop"],["Firestone","Kygo",2,1,"EPQ","a bright, tropical-house pulse with a warm, sing-along hook"],
+["Wake Me Up","Avicii",3,2,"EPQ","a folk-flavored guitar strum that bursts into a festival drop"],["Viva la Vida","Coldplay",2,1,"EPB","a rolling, string-driven stomp with a regal, singalong chorus"],["A Sky Full of Stars","Coldplay",3,1,"EPQ","a sparkling piano riff that builds into a euphoric dance drop"],
+["Paranoid Android","Radiohead",2,1,"SR","a three-part epic that lurches from quiet to explosive"],["Tom Sawyer","Rush",3,1,"SC","a synth-driven, precise groove with rapid-fire drum fills"],["Roundabout","Yes",2,1,"SB","an intricate, acoustic-to-electric journey with crisp, complex playing"],
+["Voyager","Daft Punk",2,0,"CDA","a bright, gliding instrumental with a smooth, retro-futuristic shimmer"],["Digital Love","Daft Punk",3,1,"CQ","a sparkling, disco-tinged keyboard line with a dreamy hook"],["Future Club","Perturbator",3,0,"CQ","an aggressive, neon-soaked synth pulse with a chase-scene feel"],
+["Brokendate","Com Truise",2,0,"CD","a warm, tape-worn synth groove with a slow, rolling bass"],["Hand Covers Bruise","Trent Reznor & Atticus Ross",1,0,"CDW","a cold, minimalist piano over a low, brooding pulse"],
+["Don't Know Why","Norah Jones",1,1,"UWE","a soft, jazzy piano ballad with a smoky, gentle voice"],["Better Together","Jack Johnson",1,1,"UWE","a laid-back acoustic strum with an easy, sun-warmed vocal"],["Lovely Day","Bill Withers",2,1,"UEB","a bright, sustained vocal note over a sunny, grooving bassline"],
+["Greedy","Tate McRae",3,2,"BQ","a sleek, stomping beat with a sharp, sassy delivery"],["Say So","Doja Cat",3,2,"BPQ","a slinky, disco-funk groove with a breezy, playful flow"],["Locked Out of Heaven","Bruno Mars",3,2,"PBQ","a pulsing, police-style guitar groove with a soaring falsetto"],["Beautiful Things","Benson Boone",3,2,"PQ","a piano-driven ballad that explodes into a huge, raw chorus"],
+].map(([title,artist,e,v,cats,note]) => ({title,artist,e,v,cats,note:note||NOTES[title+'|'+artist]||NOTES[title],src:'suggested'}));
+
+/* Optional: pin an exact YouTube video to any song so its link never depends on a lookup.
+   Key = "title | artist" in lowercase. Value = the 11-character video ID (the part after v= in the URL). */
+const SP_IDS = {
+  // Pin an exact Spotify track the same way: "title | artist": "TRACK_ID" (the code after /track/ in the Spotify link).
+};
+const YT_IDS = {
+  // "harder, better, faster, stronger | daft punk": "VIDEO_ID_HERE",
+};
+
+/* Library songs get energy from the researchers' length tag, or a default per category. */
+const LIBE = {W:1,D:2,A:2,R:2,P:3,B:2,L:1,E:2,S:1}, INSTR = /marooned|cirrus|^time$|awake|a moment apart|lofi|any colour|shine on|echoes/i;
+const CODE = Object.fromEntries(Object.entries(CAT).map(([k,v]) => [v,k]));
+const LIBC = LIBRARY.filter(l => !l.egg).map(l => { const cat = CODE[l.task];
+  return {title:l.title, artist:l.artist, src:'library', cat, cats:cat, vibe:l.vibe, lenTag:l.len, e:l.len ? TARGET[l.len] : LIBE[cat], v:INSTR.test(l.title) ? 0 : 1}; });
+
+function recommend(task, len, n, playlist, random){
+  const target = TARGET[len], low = task.toLowerCase();
+  const found = Object.keys(RULES).map(k => [k, (low.match(RULES[k]) || []).length]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]);
+  const cats = found.slice(0,2).map(x => x[0]), langy = cats.length > 0 && LANGY.includes(cats[0]);
+  const score = c => { if (random) return Math.random();   // easter egg: pure shuffle
+   
+    let s = 0;
+    if (c.src === 'library') { s += 1.5; if (c.cat === cats[0]) s += 6; else if (c.cat === cats[1]) s += 2.5; if (c.lenTag) s += c.lenTag === len ? 3 : -2; }
+    else { if (cats[0] && c.cats.includes(cats[0])) s += 4; else if (cats[1] && c.cats.includes(cats[1])) s += 2; if (target === 3 && c.cats.includes('Q')) s += cats[0] ? 2.7 : 4.5; if (target === 2 && c.cats.includes('X')) s += cats[0] ? (langy ? .9 : 2.2) : 4; if (target === 1 && c.cats.includes('T')) s += cats[0] ? 1.5 : 4.5; }
+    s -= Math.abs(c.e - target) * (c.src === 'library' && !c.lenTag ? .7 : 1.6);   // untagged library energy is only a default, so it counts less
+    s -= (c.cats.includes('X') && target === 2) ? 0 : c.v * (langy || target === 1 ? 1.5 : target === 2 ? .5 : 0);
+    return s + Math.random() * 1.2;               // small shuffle so Regenerate varies
+  };
+  const skip = new Set(recent.map(norm)), key = c => norm(c.title+' - '+c.artist);
+  const ranked = [...LIBC, ...SUGG].map(c => [score(c), c]).sort((a,b) => b[0]-a[0]).map(x => x[1]);
+  let pool = ranked.filter(c => !skip.has(key(c))); if (pool.length < n) pool = ranked;
+  const per = playlist ? 2 : 1, cnt = {}, out = [];
+  for (const c of pool) { if ((cnt[c.artist] || 0) >= per) continue; cnt[c.artist] = (cnt[c.artist] || 0) + 1; out.push(c); if (out.length === n) break; }
+  if (playlist) out.sort((a,b) => Math.abs(a.e-target) - Math.abs(b.e-target));   // best energy fit first
+  const label = cats[0] ? CAT[cats[0]].toLowerCase() : 'focused';
+  const data = {
+    energy_level: ['','Steady/Low','Moderate','High'][target],
+    songs: out.map(c => ({title:c.title, artist:c.artist, source:c.src,
+      why_it_fits: c.src === 'library' ? c.vibe : describe(c)}))
+  };
+  if (playlist) { data.playlist_name = 'Your Task Boombox'; data.playlist_description = `A ${EN[target]} run of ${n} tracks for ${LENP[len]}.`; }
+  return data;
+}
+/*ENGINE-END*/
+
+async function resolve(s){
+  const lib = LIBRARY.find(l => norm(l.title)===norm(s.title) && norm(l.artist)===norm(s.artist));
+  s.lib = !!lib; const id = lib && vid(lib.youtubeUrl);
+  s.link = lib && lib.youtubeUrl ? lib.youtubeUrl : 'https://duckduckgo.com/?q='+encodeURIComponent('!ducky '+s.artist+' '+s.title+' official video site:youtube.com');   // jumps straight to the top YouTube result
+  s.label = 'Play on YouTube';
+  s.spotify = SP_IDS[norm(s.title+' | '+s.artist)] ? 'https://open.spotify.com/track/'+SP_IDS[norm(s.title+' | '+s.artist)] : 'https://duckduckgo.com/?q='+encodeURIComponent('!ducky '+s.artist+' '+s.title+' site:open.spotify.com/track');   // jumps straight to the Spotify track page
+  const pin = YT_IDS[norm(s.title+' | '+s.artist)];   // exact video pinned in YT_IDS wins
+  if (pin) { s.link = 'https://www.youtube.com/watch?v='+pin; s.art = 'https://img.youtube.com/vi/'+pin+'/hqdefault.jpg'; return; }
+  if (id) { s.art = `https://img.youtube.com/vi/${id}/hqdefault.jpg`; return; }
+  try {
+    const j = await (await fetch('https://itunes.apple.com/search?entity=song&limit=1&term='+encodeURIComponent(s.title+' '+s.artist))).json();
+    const a = j.results && j.results[0] && j.results[0].artworkUrl100;
+    if (a) s.art = a.replace('100x100','600x600');
+  } catch(e){}
+}
+const artHtml = s => `<div class="art">${s.art?`<img src="${esc(s.art)}" alt="" loading="lazy" onerror="this.remove()">`:''}${''}</div>`;
+
+async function run(mode){
+  const task = $('#task').value.trim(), len = (document.querySelector('input[name=len]:checked')||{}).value;
+  const msg = $('#msg'); msg.textContent = '';
+  if (!task) return msg.textContent = 'Describe what you are working on first.';
+  if (task.length > 200 || /[.!?]\s+\S/.test(task)) return msg.textContent = 'Keep it to one sentence, under 200 characters.';
+  if (!len) return msg.textContent = 'Pick how long the task will take.';
+  const playlist = mode === 'playlist', n = playlist ? CONFIG.playlistLength : CONFIG.songCount;
+  document.querySelectorAll('.btn').forEach(b => b.disabled = true);
+  $('#out').innerHTML = `<div class="grid">${'<div class="sk"></div>'.repeat(Math.min(n,6))}</div>`;
+  const lines = ['Dialing in the flux capacitor…','Cueing up the right vibe…','Rewinding the cassette…']; let i = 0;
+  msg.textContent = lines[0]; const t = setInterval(() => msg.textContent = lines[++i % lines.length], 1800);
+  try {
+    const egg = isEgg(task, len); let data = recommend(task, len, n, playlist, egg);   // egg: random songs, Rick himself never shown
+    console.log('[HTTF]', task, len, data);
+    await Promise.all(data.songs.map(resolve));
+    if (egg) data.songs.forEach(s => { s.link = RICK_URL; s.label = 'Play on YouTube'; s.spotify = 'https://duckduckgo.com/?q='+encodeURIComponent('!ducky Rick Astley Never Gonna Give You Up site:open.spotify.com/track'); });
+    if (isDeckEgg(task)) data.songs.forEach(s => { s.link = DECK_EGG_URL; s.spotify = DECK_EGG_URL; });   // real song picks, every link points to the deck egg video
+    last = {task, len, data}; recent = [...data.songs.map(s => s.title+' - '+s.artist), ...recent].slice(0,25);
+    render(data, playlist); msg.textContent = '';
+  } catch(e){
+    $('#out').innerHTML = '';
+        msg.textContent = 'Something went wrong getting your music. Press the button to try again.';
+    console.error('[HTTF]', e);
+  } finally { clearInterval(t); document.querySelectorAll('.btn').forEach(b => b.disabled = false); }
+}
+
+const links = s => `<div class="links"><a href="${esc(s.link)}" target="_blank" rel="noopener noreferrer">Play on YouTube</a><a class="sp" href="${esc(s.spotify)}" target="_blank" rel="noopener noreferrer">Play on Spotify</a></div>`;
+function render(d, playlist){
+  const head = `<div class="summary"><span class="energy">${esc(d.energy_level)} energy</span></div>`;
+  let body;
+  if (playlist) {
+    body = `<h2 style="font-family:var(--font-title);color:var(--cyan);margin:0 0 4px">${esc(d.playlist_name)}</h2><p style="margin:0 0 16px;color:var(--muted)">${esc(d.playlist_description)}</p>
+      <ol class="pl">${d.songs.map(s => `<li>${artHtml(s)}<div><b>${esc(s.title)}</b> · ${esc(s.artist)}<small>${esc(s.why_it_fits)}</small>${links(s)}</div></li>`).join('')}</ol>`;
+  } else {
+    body = `<div class="grid">${d.songs.map(s => `<article class="card">${artHtml(s)}
+      <div class="info"><h3>${esc(s.title)}</h3><div class="by">${esc(s.artist)}</div><p>${esc(s.why_it_fits)}</p>
+      ${links(s)}</div></article>`).join('')}</div>`;
+  }
+  $('#out').innerHTML = head + body + `<div class="row">
+    ${playlist ? '<button class="btn alt" id="cp">Copy playlist as text</button><button class="btn" id="re">Back to songs</button>'
+               : '<button class="btn" id="pl">Build me a playlist</button><button class="btn alt" id="re">Regenerate</button>'}</div>`;
+  const cp = $('#cp'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(d.songs.map(s => s.title+' – '+s.artist).join('\n')); cp.textContent = 'Copied'; } catch(e){ cp.textContent = 'Copy failed'; } };
+  const pl = $('#pl'); if (pl) pl.onclick = () => run('playlist');
+  $('#re').onclick = () => run('songs');
+}
+$('#go').onclick = () => run('songs');
+$('#task').addEventListener('keydown', e => { if (e.key === 'Enter') run('songs'); });
+</script>
+</body>
+</html>
